@@ -143,7 +143,7 @@ public:
 	/* freeAllSampleChannels
 	Empties all sample channels for the given scene. Pass an invalid Scene object
 	to empty all sample channels from all scenes. */
-	
+
 	void freeAllSampleChannels(Scene);
 
 	void moveChannel(ID, std::size_t newTrackIndex, std::size_t newPosition);
