@@ -52,8 +52,8 @@ ReadResult readResampled_(const Wave& wave, mcl::AudioBuffer& dest, Frame start,
 	    /*ratio=*/pitch);
 
 	return {
-	    static_cast<int>(res.used),
-	    static_cast<int>(res.generated)};
+	    static_cast<Frame>(res.used),
+	    static_cast<Frame>(res.generated)};
 }
 
 /* -------------------------------------------------------------------------- */
