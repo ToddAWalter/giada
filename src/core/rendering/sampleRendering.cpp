@@ -40,14 +40,14 @@ namespace
 ReadResult readResampled_(const Wave& wave, mcl::AudioBuffer& dest, Frame start,
     Frame max, Frame offset, float pitch, const Resampler& resampler)
 {
-	const float* src = wave.getBuffer().getChannel(0);
-	float*       dst = dest.getChannel(0) + offset;
+	const float* srcPtr = wave.getBuffer().getChannel(0);
+	float*       dstPtr = dest.getChannel(0) + offset;
 
 	Resampler::Result res = resampler.process(
-	    /*input=*/src,
+	    /*input=*/srcPtr,
 	    /*inputPos=*/start,
 	    /*inputLength=*/max,
-	    /*output=*/dst,
+	    /*output=*/dstPtr,
 	    /*outputLength=*/dest.countFrames() - offset,
 	    /*ratio=*/pitch);
 
