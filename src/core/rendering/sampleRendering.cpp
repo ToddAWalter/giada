@@ -37,19 +37,21 @@ namespace giada::m::rendering
 {
 namespace
 {
-ReadResult readResampled_(const Wave& wave, mcl::AudioBuffer& dest, Frame start,
-    Frame max, Frame offset, float pitch, const Resampler& resampler)
+ReadResult readResampled_(const Sample& sample, mcl::AudioBuffer& dest, Frame start,
+    Frame offset, const Resampler& resampler)
 {
-	const float* srcPtr = wave.getBuffer().getChannel(0);
+	assert(sample.wave != nullptr);
+
+	const float* srcPtr = sample.wave->getBuffer().getChannel(0);
 	float*       dstPtr = dest.getChannel(0) + offset;
 
 	Resampler::Result res = resampler.process(
 	    /*input=*/srcPtr,
 	    /*inputPos=*/start,
-	    /*inputLength=*/max,
+	    /*inputLength=*/sample.range.getB(),
 	    /*output=*/dstPtr,
 	    /*outputLength=*/dest.countFrames() - offset,
-	    /*ratio=*/pitch);
+	    /*ratio=*/sample.pitch);
 
 	return {
 	    static_cast<Frame>(res.used),
@@ -58,14 +60,16 @@ ReadResult readResampled_(const Wave& wave, mcl::AudioBuffer& dest, Frame start,
 
 /* -------------------------------------------------------------------------- */
 
-ReadResult readCopy_(const Wave& wave, mcl::AudioBuffer& dest, Frame start,
-    Frame max, Frame offset)
+ReadResult readCopy_(const Sample& sample, mcl::AudioBuffer& dest, Frame start,
+    Frame offset)
 {
-	Frame used = dest.countFrames() - offset;
-	if (used > max - start)
-		used = max - start;
+	assert(sample.wave != nullptr);
 
-	dest.setAll(wave.getBuffer(), used, start, offset);
+	Frame used = dest.countFrames() - offset;
+	if (used > sample.range.getB() - start)
+		used = sample.range.getB() - start;
+
+	dest.setAll(sample.wave->getBuffer(), used, start, offset);
 
 	return {used, used};
 }
@@ -124,17 +128,15 @@ void stop_(const Channel& ch, mcl::AudioBuffer& buf, Frame offset, bool seqIsRun
 
 Frame render_(const Channel& ch, mcl::AudioBuffer& buf, Scene scene, Frame tracker, Frame offset, bool seqIsRunning, bool testEnd)
 {
-	const auto       range     = ch.sampleChannel->getRange(scene);
-	const float      pitch     = ch.sampleChannel->getPitch(scene);
-	const Wave*      wave      = ch.sampleChannel->getWave(scene);
+	const Sample&    sample    = ch.sampleChannel->getSample(scene);
 	const Resampler& resampler = ch.shared->resampler.value();
 
-	if (wave == nullptr)
+	if (sample.wave == nullptr)
 		return tracker;
 
 	while (true)
 	{
-		ReadResult res = readWave(*wave, buf, tracker, range.getB(), offset, pitch, resampler);
+		ReadResult res = readWave(sample, buf, tracker, offset, resampler);
 		tracker += res.used;
 		offset += res.generated;
 
@@ -144,9 +146,9 @@ Frame render_(const Channel& ch, mcl::AudioBuffer& buf, Scene scene, Frame track
 		if (offset >= buf.countFrames())
 			break;
 
-		if (tracker >= range.getB())
+		if (tracker >= sample.range.getB())
 		{
-			tracker = range.getA();
+			tracker = sample.range.getA();
 			ch.shared->resampler->last();
 
 			if (testEnd)
@@ -218,16 +220,17 @@ void renderSampleChannelInput(const Channel& ch, const mcl::AudioBuffer& in)
 
 /* -------------------------------------------------------------------------- */
 
-ReadResult readWave(const Wave& wave, mcl::AudioBuffer& out, Frame start, Frame max,
-    Frame offset, float pitch, const Resampler& resampler)
+ReadResult readWave(const Sample& sample, mcl::AudioBuffer& out, Frame start,
+    Frame offset, const Resampler& resampler)
 {
+	assert(sample.wave != nullptr);
 	assert(start >= 0);
-	assert(max <= wave.getBuffer().countFrames());
+	assert(sample.range.getB() <= sample.wave->getBuffer().countFrames());
 	assert(offset < out.countFrames());
 
-	if (pitch == 1.0f)
-		return readCopy_(wave, out, start, max, offset);
+	if (sample.pitch == 1.0f)
+		return readCopy_(sample, out, start, offset);
 	else
-		return readResampled_(wave, out, start, max, offset, pitch, resampler);
+		return readResampled_(sample, out, start, offset, resampler);
 }
 } // namespace giada::m::rendering

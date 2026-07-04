@@ -21,14 +21,20 @@ TEST_CASE("WaveReading")
 	}
 	m::Resampler resampler;
 
+	const Sample sample = {
+	    .wave  = &wave,
+	    .range = {0, BUFFER_SIZE},
+	    .shift = 0,
+	    .pitch = 1.0f};
+
 	SECTION("Test fill, pitch 1.0")
 	{
 		mcl::AudioBuffer out(BUFFER_SIZE, NUM_CHANNELS);
 
 		SECTION("Regular fill")
 		{
-			m::rendering::ReadResult res = rendering::readWave(wave, out,
-			    /*start=*/0, BUFFER_SIZE, /*offset=*/0, /*pitch=*/1.0f, resampler);
+			m::rendering::ReadResult res = rendering::readWave(sample, out,
+			    /*start=*/0, /*offset=*/0, resampler);
 
 			bool allFilled       = true;
 			int  numFramesFilled = 0;
@@ -47,8 +53,8 @@ TEST_CASE("WaveReading")
 
 		SECTION("Partial fill")
 		{
-			m::rendering::ReadResult res = rendering::readWave(wave, out,
-			    /*start=*/0, BUFFER_SIZE, /*offset=*/BUFFER_SIZE / 2, /*pitch=*/1.0f, resampler);
+			m::rendering::ReadResult res = rendering::readWave(sample, out,
+			    /*start=*/0, /*offset=*/BUFFER_SIZE / 2, resampler);
 
 			int numFramesFilled = 0;
 			for (int i = 0; i < out.countFrames(); ++i)
