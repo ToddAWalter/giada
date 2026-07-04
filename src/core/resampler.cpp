@@ -33,7 +33,7 @@
 
 namespace giada::m
 {
-Resampler::Resampler()
+Resampler::MonoResampler::MonoResampler()
 : m_state(nullptr)
 , m_input(nullptr)
 , m_inputPos(0)
@@ -44,29 +44,29 @@ Resampler::Resampler()
 
 /* -------------------------------------------------------------------------- */
 
-Resampler::Resampler(Quality quality)
-: Resampler()
+Resampler::MonoResampler::MonoResampler(Resampler::Quality quality)
+: MonoResampler()
 {
 	alloc(quality);
 }
 
 /* -------------------------------------------------------------------------- */
 
-Resampler::~Resampler()
+Resampler::MonoResampler::~MonoResampler()
 {
 	src_delete(m_state);
 }
 
 /* -------------------------------------------------------------------------- */
 
-long Resampler::callback(void* self, float** audio)
+long Resampler::MonoResampler::callback(void* self, float** audio)
 {
-	return static_cast<Resampler*>(self)->callback(audio);
+	return static_cast<MonoResampler*>(self)->callback(audio);
 }
 
 /* -------------------------------------------------------------------------- */
 
-long Resampler::callback(float** audio)
+long Resampler::MonoResampler::callback(float** audio)
 {
 	assert(audio != nullptr);
 
@@ -94,7 +94,7 @@ long Resampler::callback(float** audio)
 
 /* -------------------------------------------------------------------------- */
 
-void Resampler::alloc(Quality quality)
+void Resampler::MonoResampler::alloc(Quality quality)
 {
 	if (m_state != nullptr)
 		src_delete(m_state);
@@ -107,7 +107,7 @@ void Resampler::alloc(Quality quality)
 
 /* -------------------------------------------------------------------------- */
 
-Resampler::Result Resampler::process(const float* input, long inputPos, long inputLength,
+Resampler::Result Resampler::MonoResampler::process(const float* input, long inputPos, long inputLength,
     float* output, long outputLength, float ratio) const
 {
 	assert(m_state != nullptr); // Must be initialized first!
@@ -124,8 +124,47 @@ Resampler::Result Resampler::process(const float* input, long inputPos, long inp
 
 /* -------------------------------------------------------------------------- */
 
-void Resampler::last() const
+void Resampler::MonoResampler::last() const
 {
 	src_reset(m_state);
+}
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+Resampler::Resampler()
+{
+}
+
+/* -------------------------------------------------------------------------- */
+
+Resampler::Resampler(Quality quality)
+: Resampler()
+{
+	m_left.alloc(quality);
+	m_right.alloc(quality);
+}
+
+/* -------------------------------------------------------------------------- */
+
+Resampler::Result Resampler::process(const float* input, long inputPos, long inputLength,
+    float* output, long outputLength, float ratio) const
+{
+	const Result left  = m_left.process(input, inputPos, inputLength, output,
+	     outputLength, ratio);
+	const Result right = m_right.process(input + inputLength, inputPos, inputLength,
+	    output + outputLength, outputLength, ratio);
+
+	return {
+	    std::min(left.used, right.used),
+	    std::min(left.generated, right.generated)};
+}
+
+/* -------------------------------------------------------------------------- */
+
+void Resampler::last() const
+{
+	m_left.last();
+	m_right.last();
 }
 } // namespace giada::m
