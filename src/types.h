@@ -61,6 +61,12 @@ enum class SceneStatus
 	CHANGING
 };
 
+enum class PlaybackMode
+{
+	TAPE,
+	ELASTIC
+};
+
 struct PluginSortMode
 {
 	PluginSortMethod method;
@@ -89,15 +95,17 @@ struct Peak
 };
 
 /* Sample
-Struct that represents a single Wave and its range (begin-end points). No wave
-and invalid range by default. */
+Struct that represents a single Wave and its properties. No wave and invalid
+range by default. */
 
 struct Sample
 {
-	m::Wave*    wave = nullptr;
-	FrameRange range;
-	Frame       shift = 0;
-	float       pitch = 1.0;
+	m::Wave*     wave = nullptr;
+	FrameRange   range;
+	Frame        shift        = 0;
+	float        pitch        = 1.0;
+	float        time         = 1.0;
+	PlaybackMode playbackMode = PlaybackMode::TAPE;
 };
 
 struct TimeSignature

@@ -98,7 +98,7 @@ public:
 	Brings channels configuration back to the initial state: two I/O master
 	channels, one preview channel. */
 
-	void reset(Frame framesInBuffer);
+	void reset(int sampleRate, Frame framesInBuffer);
 
 	/* setBufferSize
 	Sets a new buffer size value to all channels. Must be called only when
@@ -109,7 +109,7 @@ public:
 	/* addTrack
 	Adds a new empty track, containing only the default Channel Group. */
 
-	void addTrack(int bufferSize);
+	void addTrack(int sampleRate, int bufferSize);
 
 	/* removeTracks
 	Removes a track. Note: it must be empty, except for the default Channel
@@ -122,7 +122,7 @@ public:
 	/* addChannel
 	Adds a new channel to the stack. */
 
-	Channel& addChannel(ChannelType, std::size_t trackIndex, int bufferSize);
+	Channel& addChannel(ChannelType, std::size_t trackIndex, int sampleRate, int bufferSize);
 
 	/* loadSampleChannel (1)
 	Creates a new Wave from a file path and loads it inside a Sample Channel. */
@@ -158,7 +158,7 @@ public:
 	/* cloneChannel
 	Creates a duplicate of Channel. Wants a vector of already cloned plug-ins. */
 
-	void cloneChannel(ID channelId, Scene, int bufferSize, const std::vector<Plugin*>&);
+	void cloneChannel(ID channelId, Scene, int sampleRate, int bufferSize, const std::vector<Plugin*>&);
 
 	/* copyChannelToScene
 	Copies channel's data between scenes. */

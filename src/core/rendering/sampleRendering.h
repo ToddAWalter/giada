@@ -41,6 +41,7 @@ namespace giada::m
 class Channel;
 class Wave;
 class Resampler;
+class Stretcher;
 class PluginHost;
 } // namespace giada::m
 
@@ -85,7 +86,7 @@ Copies input buffer to channel buffer: this enables the input monitoring. */
 
 void renderSampleChannelInput(const Channel&, const mcl::AudioBuffer&);
 
-ReadResult readWave(const Sample&, mcl::AudioBuffer&, Frame start, Frame offset, const Resampler&);
+ReadResult readWave(const Sample&, mcl::AudioBuffer&, Frame start, Frame offset, const Resampler&, Stretcher&);
 } // namespace giada::m::rendering
 
 #endif

@@ -32,6 +32,7 @@
 #include "src/core/quantizer.h"
 #include "src/core/rendering/sampleRendering.h"
 #include "src/core/resampler.h"
+#include "src/core/stretcher.h"
 #include "src/deps/concurrentqueue/concurrentqueue.h"
 #include "src/deps/mcl-audio-buffer/src/audioBuffer.hpp"
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -79,6 +80,8 @@ struct ChannelShared final
 	changes by the Swapper mechanism). Let's put it in the shared state here. */
 
 	std::optional<Resampler> resampler = {};
+
+	std::optional<Stretcher> stretcher = {};
 };
 } // namespace giada::m
 

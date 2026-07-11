@@ -29,6 +29,7 @@
 #include "src/core/plugins/pluginHost.h"
 #include "src/core/rendering/sampleAdvance.h"
 #include "src/core/resampler.h"
+#include "src/core/stretcher.h"
 #include "src/core/wave.h"
 #include "src/deps/mcl-audio-buffer/src/audioBuffer.hpp"
 #include <cassert>
@@ -52,6 +53,28 @@ ReadResult readResampled_(const Sample& sample, mcl::AudioBuffer& dest, Frame st
 	    /*output=*/dstPtr,
 	    /*outputLength=*/dest.countFrames() - offset,
 	    /*ratio=*/sample.pitch);
+
+	return {
+	    static_cast<Frame>(res.used),
+	    static_cast<Frame>(res.generated)};
+}
+
+/* -------------------------------------------------------------------------- */
+
+ReadResult readStretched_(const Sample& sample, mcl::AudioBuffer& dest, Frame start,
+    Frame offset, Stretcher& stretcher)
+{
+	assert(sample.wave != nullptr);
+
+	Stretcher::Result res = stretcher.process(
+	    /*input=*/sample.wave->getBuffer().getData(),
+	    /*inputLength=*/sample.wave->getBuffer().countFrames(),
+	    /*inputStart=*/start,
+	    /*output=*/dest.getData(),
+	    /*outputLength=*/dest.countFrames(),
+	    /*outputStart=*/offset,
+	    /*timeRatio=*/sample.time,
+	    /*pitchRatio=*/sample.pitch);
 
 	return {
 	    static_cast<Frame>(res.used),
@@ -130,13 +153,14 @@ Frame render_(const Channel& ch, mcl::AudioBuffer& buf, Scene scene, Frame track
 {
 	const Sample&    sample    = ch.sampleChannel->getSample(scene);
 	const Resampler& resampler = ch.shared->resampler.value();
+	Stretcher&       stretcher = ch.shared->stretcher.value();
 
 	if (sample.wave == nullptr)
 		return tracker;
 
 	while (true)
 	{
-		ReadResult res = readWave(sample, buf, tracker, offset, resampler);
+		ReadResult res = readWave(sample, buf, tracker, offset, resampler, stretcher);
 		tracker += res.used;
 		offset += res.generated;
 
@@ -150,6 +174,7 @@ Frame render_(const Channel& ch, mcl::AudioBuffer& buf, Scene scene, Frame track
 		{
 			tracker = sample.range.getA();
 			ch.shared->resampler->last();
+			ch.shared->stretcher->last();
 
 			if (testEnd)
 			{
@@ -176,6 +201,7 @@ void renderSampleChannel(const Channel& ch, Scene scene, bool seqIsRunning)
 
 	const auto        range     = ch.sampleChannel->getRange(scene);
 	const Resampler&  resampler = ch.shared->resampler.value();
+	Stretcher&        stretcher = ch.shared->stretcher.value();
 	mcl::AudioBuffer& buf       = ch.shared->audioBuffer;
 	Frame             tracker   = std::clamp(ch.shared->tracker.load(), range.getA(), range.getB()); /* Make sure tracker stays within begin-end range. */
 
@@ -192,6 +218,7 @@ void renderSampleChannel(const Channel& ch, Scene scene, bool seqIsRunning)
 
 		render_(ch, buf, scene, tracker, 0, seqIsRunning, /*testEnd=*/false);
 		resampler.last();
+		stretcher.last();
 
 		/* Mode::REWIND: fill buffer from offset:  [abcdefghi|abcdfefg]
 		   Mode::STOP:   clear buffer from offset: [abcdefghi|--------] */
@@ -221,16 +248,21 @@ void renderSampleChannelInput(const Channel& ch, const mcl::AudioBuffer& in)
 /* -------------------------------------------------------------------------- */
 
 ReadResult readWave(const Sample& sample, mcl::AudioBuffer& out, Frame start,
-    Frame offset, const Resampler& resampler)
+    Frame offset, const Resampler& resampler, Stretcher& stretcher)
 {
 	assert(sample.wave != nullptr);
 	assert(start >= 0);
 	assert(sample.range.getB() <= sample.wave->getBuffer().countFrames());
 	assert(offset < out.countFrames());
 
-	if (sample.pitch == 1.0f)
-		return readCopy_(sample, out, start, offset);
-	else
-		return readResampled_(sample, out, start, offset, resampler);
+	if (sample.playbackMode == PlaybackMode::TAPE)
+	{
+		if (sample.pitch == 1.0f)
+			return readCopy_(sample, out, start, offset);
+		else
+			return readResampled_(sample, out, start, offset, resampler);
+	}
+	else // PlaybackMode::ELASTIC
+		return readStretched_(sample, out, start, offset, stretcher);
 }
 } // namespace giada::m::rendering
