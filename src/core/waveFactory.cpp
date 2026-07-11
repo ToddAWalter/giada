@@ -149,10 +149,19 @@ Result createFromFile(const std::string& path, ID id, int samplerate, Resampler:
 	std::unique_ptr<Wave> wave = std::make_unique<Wave>(waveId_.generate(id));
 	wave->alloc(header.frames, header.channels, header.samplerate, getBits_(header), path);
 
-	if (sf_readf_float(fileIn, wave->getBuffer().getData(), header.frames) != header.frames)
+	std::vector<float> tempData(header.frames * header.channels);
+	if (sf_readf_float(fileIn, tempData.data(), header.frames) != header.frames)
 		u::log::print("[waveFactory::create] warning: incomplete read!\n");
 
 	sf_close(fileIn);
+
+	/* Libsndfile returns interleaved frames, but AudioBuffer is planar. Let's
+	deinterleave samples here so the in-memory layout matches AudioBuffer. */
+	// TODO - add libsndfile wrapper with auto cleanup for sf_close()
+
+	for (sf_count_t i = 0; i < header.frames; ++i)
+		for (int ch = 0; ch < header.channels; ++ch)
+			wave->getBuffer().getChannel(ch)[i] = tempData[i * header.channels + ch];
 
 	if (header.channels == 1 && !wfx::monoToStereo(*wave))
 		return {G_RES_ERR_PROCESSING};
