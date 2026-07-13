@@ -164,12 +164,6 @@ Frame render_(const Channel& ch, mcl::AudioBuffer& buf, Scene scene, Frame track
 		tracker += res.used;
 		offset += res.generated;
 
-		/* Break here if the buffer has been filled completely: there's nothing
-		else do to. */
-
-		if (offset >= buf.countFrames())
-			break;
-
 		if (tracker >= sample.range.getB())
 		{
 			tracker = sample.range.getA();
@@ -183,6 +177,12 @@ Frame render_(const Channel& ch, mcl::AudioBuffer& buf, Scene scene, Frame track
 					break;
 			}
 		}
+
+		/* Break here if the buffer has been filled completely: there's nothing
+		else do to. */
+
+		if (offset >= buf.countFrames())
+			break;
 	}
 
 	return tracker;
