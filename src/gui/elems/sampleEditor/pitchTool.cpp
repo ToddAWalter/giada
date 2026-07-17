@@ -33,6 +33,7 @@
 #include "src/gui/elems/basics/dial.h"
 #include "src/gui/elems/basics/imageButton.h"
 #include "src/gui/elems/basics/input.h"
+#include "src/gui/elems/basics/menu.h"
 #include "src/gui/elems/basics/textButton.h"
 #include "src/gui/graphics.h"
 #include "src/gui/ui.h"
@@ -46,25 +47,41 @@ namespace utils = mcl::utils;
 namespace giada::v
 {
 gePitchTool::gePitchTool(const c::sampleEditor::Data& d)
-: geFlex(Direction::HORIZONTAL, G_GUI_INNER_MARGIN)
+: geFlex(Direction::VERTICAL, G_GUI_INNER_MARGIN)
 , m_data(nullptr)
 {
-	m_label       = new geBox(g_ui->getI18Text(LangMap::SAMPLEEDITOR_PITCH), FL_ALIGN_LEFT);
-	m_dial        = new geDial();
-	m_input       = new geInput();
-	m_pitchToBar  = new geTextButton(g_ui->getI18Text(LangMap::SAMPLEEDITOR_PITCH_TOBAR));
-	m_pitchToSong = new geTextButton(g_ui->getI18Text(LangMap::SAMPLEEDITOR_PITCH_TOSONG));
-	m_pitchHalf   = new geImageButton(graphics::divideOff, graphics::divideOn);
-	m_pitchDouble = new geImageButton(graphics::multiplyOff, graphics::multiplyOn);
-	m_pitchReset  = new geTextButton(g_ui->getI18Text(LangMap::COMMON_RESET));
-	addWidget(m_label, 50);
-	addWidget(m_dial, G_GUI_UNIT);
-	addWidget(m_input, 70);
-	addWidget(m_pitchToBar, 70);
-	addWidget(m_pitchToSong, 70);
-	addWidget(m_pitchHalf, G_GUI_UNIT);
-	addWidget(m_pitchDouble, G_GUI_UNIT);
-	addWidget(m_pitchReset, 70);
+	geFlex* row1 = new geFlex(Direction::HORIZONTAL, G_GUI_INNER_MARGIN);
+	{
+		m_label       = new geBox(g_ui->getI18Text(LangMap::SAMPLEEDITOR_PITCH), FL_ALIGN_LEFT);
+		m_dial        = new geDial();
+		m_input       = new geInput();
+		m_pitchToBar  = new geTextButton(g_ui->getI18Text(LangMap::SAMPLEEDITOR_PITCH_TOBAR));
+		m_pitchToSong = new geTextButton(g_ui->getI18Text(LangMap::SAMPLEEDITOR_PITCH_TOSONG));
+		m_pitchHalf   = new geImageButton(graphics::divideOff, graphics::divideOn);
+		m_pitchDouble = new geImageButton(graphics::multiplyOff, graphics::multiplyOn);
+		m_pitchReset  = new geTextButton(g_ui->getI18Text(LangMap::COMMON_RESET));
+		row1->addWidget(m_label, 50);
+		row1->addWidget(m_dial, G_GUI_UNIT);
+		row1->addWidget(m_input, 70);
+		row1->addWidget(m_pitchToBar, 70);
+		row1->addWidget(m_pitchToSong, 70);
+		row1->addWidget(m_pitchHalf, G_GUI_UNIT);
+		row1->addWidget(m_pitchDouble, G_GUI_UNIT);
+		row1->addWidget(m_pitchReset, 70);
+		row1->end();
+	}
+
+	geFlex* row2 = new geFlex(Direction::HORIZONTAL, G_GUI_INNER_MARGIN);
+	{
+		m_playbackMode = new geMenu();
+		m_time         = new geInput();
+		row2->addWidget(m_playbackMode);
+		row2->addWidget(m_time);
+		row2->end();
+	}
+
+	addWidget(row1, G_GUI_UNIT);
+	addWidget(row2, G_GUI_UNIT);
 	end();
 
 	m_dial->range(0.01f, 4.0f);
@@ -108,6 +125,23 @@ gePitchTool::gePitchTool(const c::sampleEditor::Data& d)
 		c::channel::setChannelPitch(m_data->channelId, G_DEFAULT_PITCH, Thread::MAIN);
 	};
 
+	m_playbackMode->addItem(ID{1}, "Tape");
+	m_playbackMode->addItem(ID{2}, "Elastic");
+	m_playbackMode->onSelect = [this](ID id)
+	{
+		if (id == ID{1})
+			c::channel::setChannelPlaybackMode(m_data->channelId, PlaybackMode::TAPE);
+		else
+			c::channel::setChannelPlaybackMode(m_data->channelId, PlaybackMode::ELASTIC);
+	};
+
+	m_time->setType(FL_FLOAT_INPUT);
+	m_time->setWhen(FL_WHEN_RELEASE | FL_WHEN_ENTER_KEY); // on focus lost or enter key
+	m_time->onChange = [this](const std::string& val)
+	{
+		c::channel::setChannelTime(m_data->channelId, utils::string::toFloat(val));
+	};
+
 	rebuild(d);
 }
 
@@ -117,6 +151,7 @@ void gePitchTool::rebuild(const c::sampleEditor::Data& d)
 {
 	m_data = &d;
 	update(m_data->sample.pitch, /*isDial=*/false);
+	m_time->setValue(fmt::format("{:.4f}", m_data->sample.time)); // 4 digits
 }
 
 /* -------------------------------------------------------------------------- */

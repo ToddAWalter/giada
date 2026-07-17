@@ -418,6 +418,20 @@ float setChannelPitch(ID channelId, float v, Thread t)
 
 /* -------------------------------------------------------------------------- */
 
+void setChannelTime(ID channelId, float v)
+{
+	g_engine->getChannelsApi().setTime(channelId, v);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void setChannelPlaybackMode(ID channelId, PlaybackMode mode)
+{
+	g_engine->getChannelsApi().setPlaybackMode(channelId, mode);
+}
+
+/* -------------------------------------------------------------------------- */
+
 float setChannelPan(ID channelId, float v)
 {
 	g_engine->getChannelsApi().setPan(channelId, v);
