@@ -244,6 +244,20 @@ void ChannelsApi::setPitch(ID channelId, float v)
 
 /* -------------------------------------------------------------------------- */
 
+void ChannelsApi::setTime(ID channelId, float v)
+{
+	m_channelManager.setTime(channelId, v, m_sequencer.getCurrentScene());
+}
+
+/* -------------------------------------------------------------------------- */
+
+void ChannelsApi::setPlaybackMode(ID channelId, PlaybackMode mode)
+{
+	m_channelManager.setPlaybackMode(channelId, mode, m_sequencer.getCurrentScene());
+}
+
+/* -------------------------------------------------------------------------- */
+
 void ChannelsApi::setPan(ID channelId, float v)
 {
 	m_channelManager.setPan(channelId, v);

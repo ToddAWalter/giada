@@ -402,6 +402,36 @@ void ChannelManager::setPitch(ID channelId, float value, Scene scene)
 
 /* -------------------------------------------------------------------------- */
 
+void ChannelManager::setTime(ID channelId, float value, Scene scene)
+{
+	Channel& c       = m_model.get().tracks.getChannel(channelId);
+	Channel& preview = m_model.get().tracks.getChannel(PREVIEW_CHANNEL_ID);
+
+	assert(c.sampleChannel);
+
+	const float time = std::clamp(value, G_MIN_TIME, G_MAX_TIME);
+
+	c.sampleChannel->setTime(time, scene);
+	preview.sampleChannel->setTime(time, Scene{0});
+	m_model.swap(model::SwapType::SOFT);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void ChannelManager::setPlaybackMode(ID channelId, PlaybackMode playbackMode, Scene scene)
+{
+	Channel& c       = m_model.get().tracks.getChannel(channelId);
+	Channel& preview = m_model.get().tracks.getChannel(PREVIEW_CHANNEL_ID);
+
+	assert(c.sampleChannel);
+
+	c.sampleChannel->setPlaybackMode(playbackMode, scene);
+	preview.sampleChannel->setPlaybackMode(playbackMode, Scene{0});
+	m_model.swap(model::SwapType::SOFT);
+}
+
+/* -------------------------------------------------------------------------- */
+
 void ChannelManager::setPan(ID channelId, float value)
 {
 	m_model.get().tracks.getChannel(channelId).pan = std::clamp(value, 0.0f, G_MAX_PAN);

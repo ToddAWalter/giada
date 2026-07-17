@@ -185,9 +185,23 @@ void SampleChannel::setShift(Frame shift, Scene scene)
 
 /* -------------------------------------------------------------------------- */
 
+void SampleChannel::setPlaybackMode(PlaybackMode playbackMode, Scene scene)
+{
+	m_samples[scene.getIndex()].playbackMode = playbackMode;
+}
+
+/* -------------------------------------------------------------------------- */
+
 void SampleChannel::setPitch(float pitch, Scene scene)
 {
 	m_samples[scene.getIndex()].pitch = pitch;
+}
+
+/* -------------------------------------------------------------------------- */
+
+void SampleChannel::setTime(float time, Scene scene)
+{
+	m_samples[scene.getIndex()].time = time;
 }
 
 /* -------------------------------------------------------------------------- */

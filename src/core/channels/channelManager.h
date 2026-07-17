@@ -187,6 +187,8 @@ public:
 	void setInputMonitor(ID channelId, bool value);
 	void setVolume(ID channelId, float value);
 	void setPitch(ID channelId, float value, Scene);
+	void setTime(ID channelId, float value, Scene);
+	void setPlaybackMode(ID channelId, PlaybackMode, Scene);
 	void setPan(ID channelId, float value);
 	void setRange(ID channelId, FrameRange, Scene);
 	void resetRange(ID channelId, Scene);
