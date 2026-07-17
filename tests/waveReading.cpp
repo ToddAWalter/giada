@@ -14,12 +14,19 @@ TEST_CASE("WaveReading")
 
 	m::Wave wave({});
 	wave.getBuffer().alloc(BUFFER_SIZE, NUM_CHANNELS);
-	wave.getBuffer().forEachFrame([](float* f, int i)
+	for (int i = 0; i < wave.getBuffer().countFrames(); ++i)
 	{
-		f[0] = static_cast<float>(i + 1);
-		f[1] = static_cast<float>(i + 1);
-	});
+		wave.getBuffer().at(i, 0) = static_cast<float>(i + 1);
+		wave.getBuffer().at(i, 1) = static_cast<float>(i + 1);
+	}
 	m::Resampler resampler;
+	m::Stretcher stretcher(/*sampleRate=*/44100);
+
+	const Sample sample = {
+	    .wave  = &wave,
+	    .range = {0, BUFFER_SIZE},
+	    .shift = 0,
+	    .pitch = 1.0f};
 
 	SECTION("Test fill, pitch 1.0")
 	{
@@ -27,18 +34,18 @@ TEST_CASE("WaveReading")
 
 		SECTION("Regular fill")
 		{
-			m::rendering::ReadResult res = rendering::readWave(wave, out,
-			    /*start=*/0, BUFFER_SIZE, /*offset=*/0, /*pitch=*/1.0f, resampler);
+			m::rendering::ReadResult res = rendering::readWave(sample, out,
+			    /*start=*/0, /*offset=*/0, resampler, stretcher);
 
 			bool allFilled       = true;
 			int  numFramesFilled = 0;
-			out.forEachFrame([&allFilled, &numFramesFilled](const float* f, int)
+			for (int i = 0; i < out.countFrames(); ++i)
 			{
-				if (f[0] == 0.0f)
+				if (out.at(i, 0) == 0.0f)
 					allFilled = false;
 				else
 					numFramesFilled++;
-			});
+			}
 
 			REQUIRE(allFilled);
 			REQUIRE(numFramesFilled == res.used);
@@ -47,19 +54,19 @@ TEST_CASE("WaveReading")
 
 		SECTION("Partial fill")
 		{
-			m::rendering::ReadResult res = rendering::readWave(wave, out,
-			    /*start=*/0, BUFFER_SIZE, /*offset=*/BUFFER_SIZE / 2, /*pitch=*/1.0f, resampler);
+			m::rendering::ReadResult res = rendering::readWave(sample, out,
+			    /*start=*/0, /*offset=*/BUFFER_SIZE / 2, resampler, stretcher);
 
 			int numFramesFilled = 0;
-			out.forEachFrame([&numFramesFilled](const float* f, int)
+			for (int i = 0; i < out.countFrames(); ++i)
 			{
-				if (f[0] != 0.0f)
+				if (out.at(i, 0) != 0.0f)
 					numFramesFilled++;
-			});
+			}
 
 			REQUIRE(numFramesFilled == BUFFER_SIZE / 2);
-			REQUIRE(out[(BUFFER_SIZE / 2) - 1][0] == 0.0f);
-			REQUIRE(out[BUFFER_SIZE / 2][0] != 0.0f);
+			REQUIRE(out.at((BUFFER_SIZE / 2) - 1, 0) == 0.0f);
+			REQUIRE(out.at(BUFFER_SIZE / 2, 0) != 0.0f);
 			REQUIRE(numFramesFilled == res.used);
 			REQUIRE(numFramesFilled == res.generated);
 		}

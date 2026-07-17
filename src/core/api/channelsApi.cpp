@@ -89,8 +89,9 @@ model::Tracks& ChannelsApi::getTracks()
 
 void ChannelsApi::addTrack()
 {
+	const int sampleRate = m_kernelAudio.getSampleRate();
 	const int bufferSize = m_kernelAudio.getBufferSize();
-	m_channelManager.addTrack(bufferSize);
+	m_channelManager.addTrack(sampleRate, bufferSize);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -111,8 +112,9 @@ void ChannelsApi::setTrackWidth(std::size_t trackIndex, int width)
 
 Channel& ChannelsApi::add(ChannelType type, std::size_t trackIndex)
 {
+	const int sampleRate = m_kernelAudio.getSampleRate();
 	const int bufferSize = m_kernelAudio.getBufferSize();
-	return m_channelManager.addChannel(type, trackIndex, bufferSize);
+	return m_channelManager.addChannel(type, trackIndex, sampleRate, bufferSize);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -179,7 +181,7 @@ void ChannelsApi::clone(ID channelId)
 	const std::vector<Plugin*> plugins       = m_pluginManager.clonePlugins(ch.plugins, sampleRate, bufferSize, m_model);
 	const ID                   nextChannelId = channelFactory::getNextId();
 
-	m_channelManager.cloneChannel(channelId, scene, bufferSize, plugins);
+	m_channelManager.cloneChannel(channelId, scene, sampleRate, bufferSize, plugins);
 	m_actionManager.cloneActions(channelId, scene, nextChannelId);
 }
 
@@ -238,6 +240,20 @@ void ChannelsApi::setVolume(ID channelId, float v)
 void ChannelsApi::setPitch(ID channelId, float v)
 {
 	m_channelManager.setPitch(channelId, v, m_sequencer.getCurrentScene());
+}
+
+/* -------------------------------------------------------------------------- */
+
+void ChannelsApi::setTime(ID channelId, float v)
+{
+	m_channelManager.setTime(channelId, v, m_sequencer.getCurrentScene());
+}
+
+/* -------------------------------------------------------------------------- */
+
+void ChannelsApi::setPlaybackMode(ID channelId, PlaybackMode mode)
+{
+	m_channelManager.setPlaybackMode(channelId, mode, m_sequencer.getCurrentScene());
 }
 
 /* -------------------------------------------------------------------------- */

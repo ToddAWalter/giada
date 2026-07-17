@@ -12,18 +12,19 @@ TEST_CASE("rendering::sampleRendering")
 	// Wave values: [1..BUFFERSIZE*4]
 	m::Wave wave({});
 	wave.getBuffer().alloc(BUFFER_SIZE * 4, NUM_CHANNELS);
-	wave.getBuffer().forEachFrame([](float* f, int i)
+	for (int i = 0; i < wave.getBuffer().countFrames(); ++i)
 	{
-		f[0] = static_cast<float>(i + 1);
-		f[1] = static_cast<float>(i + 1);
-	});
+		wave.getBuffer().at(i, 0) = static_cast<float>(i + 1);
+		wave.getBuffer().at(i, 1) = static_cast<float>(i + 1);
+	}
 
 	m::ChannelShared channelShared({}, BUFFER_SIZE);
 	m::Channel       channel(ChannelType::SAMPLE, ID{1}, channelShared);
 
 	channelShared.quantizer.emplace();
 	channelShared.renderQueue.emplace(/*size=*/16);
-	channelShared.resampler.emplace(Resampler::Quality::LINEAR, G_MAX_IO_CHANS);
+	channelShared.resampler.emplace(Resampler::Quality::LINEAR);
+	channelShared.stretcher.emplace(48000);
 
 	SECTION("Test initialization")
 	{
@@ -57,12 +58,11 @@ TEST_CASE("rendering::sampleRendering")
 				m::rendering::renderSampleChannel(channel, Scene{0}, /*seqIsRunning=*/false);
 
 				int numFramesWritten = 0;
-				channelShared.audioBuffer.forEachFrame([&numFramesWritten](float* f, int)
+				for (int i = 0; i < channelShared.audioBuffer.countFrames(); ++i)
 				{
-					if (f[0] != 0.0)
+					if (channelShared.audioBuffer.at(i, 0) != 0.0f)
 						numFramesWritten++;
-				});
-
+				}
 				REQUIRE(numFramesWritten == (RANGE_END - RANGE_BEGIN) / pitch);
 			}
 
@@ -76,7 +76,7 @@ TEST_CASE("rendering::sampleRendering")
 				m::rendering::renderSampleChannel(channel, Scene{0}, /*seqIsRunning=*/false);
 
 				// Rendering should start over again at buffer[OFFSET]
-				REQUIRE(channelShared.audioBuffer[OFFSET][0] == 1.0f);
+				REQUIRE(channelShared.audioBuffer.at(OFFSET, 0) == 1.0f);
 			}
 
 			SECTION("Stop, pitch == " + std::to_string(pitch))
@@ -89,11 +89,11 @@ TEST_CASE("rendering::sampleRendering")
 				m::rendering::renderSampleChannel(channel, Scene{0}, /*seqIsRunning=*/false);
 
 				int numFramesWritten = 0;
-				channelShared.audioBuffer.forEachFrame([&numFramesWritten](float* f, int)
+				for (int i = 0; i < channelShared.audioBuffer.countFrames(); ++i)
 				{
-					if (f[0] != 0.0)
-						numFramesWritten++;
-				});
+					if (channelShared.audioBuffer.at(i, 0) != 0.0f)
+						++numFramesWritten;
+				}
 
 				REQUIRE(numFramesWritten == OFFSET);
 			}

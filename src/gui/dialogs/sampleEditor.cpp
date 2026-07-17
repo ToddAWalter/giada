@@ -106,7 +106,7 @@ gdSampleEditor::gdSampleEditor(ID channelId, const Model& model)
 				pitchTool = new gePitchTool(m_data);
 				rangeTool = new geRangeTool(m_data);
 				shiftTool = new geShiftTool(m_data);
-				tools->addWidget(pitchTool, G_GUI_UNIT);
+				tools->addWidget(pitchTool, G_GUI_UNIT * 2);
 				tools->addWidget(rangeTool, G_GUI_UNIT);
 				tools->addWidget(shiftTool, G_GUI_UNIT);
 				tools->end();
@@ -122,7 +122,7 @@ gdSampleEditor::gdSampleEditor(ID channelId, const Model& model)
 
 		container->addWidget(top, G_GUI_UNIT);
 		container->addWidget(waveTools);
-		container->addWidget(bottom, 68);
+		container->addWidget(bottom, 88);
 		container->end();
 	}
 

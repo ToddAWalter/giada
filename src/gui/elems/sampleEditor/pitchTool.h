@@ -39,6 +39,7 @@ namespace giada::v
 class geInput;
 class geBox;
 class geDial;
+class geMenu;
 class geTextButton;
 class geImageButton;
 class gePitchTool : public geFlex
@@ -60,6 +61,8 @@ private:
 	geImageButton* m_pitchHalf;
 	geImageButton* m_pitchDouble;
 	geTextButton*  m_pitchReset;
+	geMenu*        m_playbackMode;
+	geInput*       m_time;
 };
 } // namespace giada::v
 

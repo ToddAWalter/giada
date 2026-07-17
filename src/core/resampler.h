@@ -54,18 +54,36 @@ public:
 	};
 
 	Resampler(); // Invalid
-	Resampler(Quality quality, int channels);
+	Resampler(Quality quality);
 	Resampler(const Resampler& o)          = delete;
 	Resampler(Resampler&&)                 = delete;
 	Resampler& operator=(const Resampler&) = delete;
 	Resampler& operator=(Resampler&&)      = delete;
-	~Resampler();
 
 	/* process
-	Resamples a certain amount of frames from 'input' starting at 'inputPos' and
-	puts the result into 'output'. */
+	Resamples a stereo planar buffer. The input buffer must contain two contiguous
+	mono channels laid out as:
 
-	Result process(float* input, long inputPos, long inputLength, float* output,
+	    [left channel frames][right channel frames]
+
+	'input' points to the first frame of the left channel.
+	'input + inputLength' points to the first frame of the right channel.
+
+	The output buffer uses the same planar layout:
+
+	    [left channel frames][right channel frames]
+
+	All positions and lengths are expressed in frames per channel, not samples.
+	The left and right channels are resampled independently using the same ratio.
+
+	Example: if 'inputLength' is 512 frames, then:
+
+	    - input[0 .. 511] contains the left channel
+	    - input[512 .. 1023] contains the right channel
+
+	The same layout applies to 'output'. */
+
+	Result process(const float* input, long inputPos, long inputLength, float* output,
 	    long outputLength, float ratio) const;
 
 	/* last
@@ -74,23 +92,57 @@ public:
 	void last() const;
 
 private:
-	static long callback(void* self, float** audio);
-	long        callback(float** audio);
+	/* MonoResampler
+	A thin *mono* wrapper around libsamplerate. This class resamples a single
+	channel only: it expects one contiguous mono input buffer and writes one
+	contiguous mono output buffer. All positions and lengths are expressed in
+	frames, not samples. It is intended to be used internally by the stereo
+	Resampler class, with one MonoResampler instance per channel. */
 
-	void alloc(Quality quality, int channels);
+	class MonoResampler
+	{
+	public:
+		MonoResampler(); // Invalid
+		MonoResampler(Quality quality);
+		MonoResampler(const Resampler& o)          = delete;
+		MonoResampler(Resampler&&)                 = delete;
+		MonoResampler& operator=(const Resampler&) = delete;
+		MonoResampler& operator=(Resampler&&)      = delete;
+		~MonoResampler();
 
-	/* CHUNK_LEN
-	How many chunks of data to read from input in the callback. */
+		/* process
+		Resamples a certain amount of frames from 'input' starting at 'inputPos' and
+		puts the result into 'output'. */
 
-	static constexpr int CHUNK_LEN = 256;
+		Result process(const float* input, long inputPos, long inputLength, float* output,
+		    long outputLength, float ratio) const;
 
-	SRC_STATE*     m_state;
-	Quality        m_quality;
-	mutable float* m_input;       // Pointer to input data
-	mutable long   m_inputPos;    // Where to read from input
-	mutable long   m_inputLength; // Total number of frames in input data
-	int            m_channels;    // Number of channels
-	mutable long   m_usedFrames;  // How many frames have been read from input with a process() call
+		/* last
+		Call this when you are about to process the last chunk of data. */
+
+		void last() const;
+
+		void alloc(Quality quality);
+
+	private:
+		static long callback(void* self, float** audio);
+		long        callback(float** audio);
+
+		/* CHUNK_LEN
+		How many chunks of data to read from input in the callback. */
+
+		static constexpr int CHUNK_LEN = 256;
+
+		SRC_STATE*     m_state;
+		Quality        m_quality;
+		mutable float* m_input;       // Pointer to input data
+		mutable long   m_inputPos;    // Where to read from input
+		mutable long   m_inputLength; // Total number of frames in input data
+		mutable long   m_usedFrames;  // How many frames have been read from input with a process() call
+	};
+
+	MonoResampler m_left;
+	MonoResampler m_right;
 };
 } // namespace giada::m
 

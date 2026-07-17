@@ -285,7 +285,7 @@ void Engine::init(const Conf& conf)
 	const int bufferSize = m_kernelAudio.getBufferSize();
 
 	m_mixer.reset(m_sequencer.getMaxFramesInLoop(sampleRate), bufferSize);
-	m_channelManager.reset(bufferSize);
+	m_channelManager.reset(sampleRate, bufferSize);
 	m_sequencer.reset(sampleRate);
 	m_pluginHost.reset(bufferSize);
 	m_pluginManager.reset();
@@ -321,7 +321,7 @@ void Engine::reset()
 
 	m_model.reset();
 	m_mixer.reset(m_sequencer.getMaxFramesInLoop(sampleRate), bufferSize);
-	m_channelManager.reset(bufferSize);
+	m_channelManager.reset(sampleRate, bufferSize);
 	m_sequencer.reset(sampleRate);
 	m_actionManager.reset();
 	m_pluginHost.reset(bufferSize);

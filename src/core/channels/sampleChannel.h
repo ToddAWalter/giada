@@ -71,7 +71,9 @@ public:
 	void setRange(FrameRange, Scene);
 	void setSample(const Sample&, Scene, float samplerateRatio);
 	void setShift(Frame, Scene);
+	void setPlaybackMode(PlaybackMode, Scene);
 	void setPitch(float, Scene);
+	void setTime(float, Scene);
 
 	bool             inputMonitor;
 	bool             overdubProtection;
